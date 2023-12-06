@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wyniki wyszukiwania trasy</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        tbody tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+
+        .sort-arrow::after {
+            content: ' ';
+            display: inline-block;
+            width: 10px;
+        }
+
+        .sort-arrow.up::after {
+            content: '▲';
+        }
+
+        .sort-arrow.down::after {
+            content: '▼';
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2>Wyniki wyszukiwania trasy</h2>
+
+    <table class="table mt-4">
+        <thead>
+        <tr>
+            <th>Przystanek początkowy</th>
+            <th>Przystanek końcowy</th>
+            <th>Data i godzina odjazdu</th>
+            <th>Data i godzina przyjazdu</th>
+            <th id="sortTime" class="sort-arrow up">Czas przejazdu</th>
+            <th>Liczba przesiadek</th>
+            <th>Przez:</th>
+        </tr>
+        </thead>
+        <tbody id="results-body">
+            <!-- Dane będą dynamicznie dodawane tutaj -->
+            {% for result in results %}
+            <tr class="result-row" data-path="{{ result.path }}" {% if result.time != '' %}data-time="{{ result.time }}"{% endif %}>
+                <td>{{ result.start }}</td>
+                <td>{{ result.stop }}</td>
+                <td>{{ result.departureDate }} {{ result.departureHour }}</td>
+                <td>{{ result.arrivalDate }} {{ result.arrivalHour }}</td>
+                <td>{{ result.time }} minut(-y/a)</td>
+                <td>{{ result.transfers }}</td>
+                <td>{{ result.path.split(' -> ')[1:-1]|join(', ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var sortAscending = true;
+        $('#sortTime').click(function() {
+            sortAscending = !sortAscending;
+            var rows = $('#results-body .result-row');
+            rows.sort(function(a, b) {
+                var keyA = parseInt($(a).data('time'));
+                var keyB = parseInt($(b).data('time'));
+                if (sortAscending) {
+                    return keyA - keyB;
+                } else {
+                    return keyB - keyA;
+                }
+            });
+            $.each(rows, function(index, row) {
+                $('#results-body').append(row);
+
+            });
+            $('#sortTime').removeClass(sortAscending ? 'down' : 'up');
+            $('#sortTime').addClass(sortAscending ? 'up' : 'down');
+        });
+    });
+</script>
+
+</body>
+</html>

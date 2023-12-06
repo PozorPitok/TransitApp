@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wyszukiwanie trasy</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2>Wyszukiwanie trasy</h2>
+
+    <form action="/" method="post" class="mt-4">
+        <div class="form-group">
+            <label for="start">Przystanek początkowy:</label>
+            <input type="text" class="form-control" id="start" name="start" placeholder="Wpisz przystanek początkowy">
+        </div>
+        <div class="form-group">
+            <label for="stop">Przystanek końcowy:</label>
+            <input type="text" class="form-control" id="stop" name="stop" placeholder="Wpisz przystanek końcowy">
+        </div>
+        <div class="form-group">
+            <label for="via">Przez (przystanek pośredni):</label>
+            <input type="text" class="form-control" id="via" name="via" placeholder="Wpisz przystanek pośredni">
+        </div>
+        <div class="form-group">
+            <label for="departureDate">Data odjazdu:</label>
+            <input type="date" class="form-control" id="departureDate" name="departureDate">
+        </div>
+        <div class="form-group">
+            <label for="departureTime">Godzina odjazdu:</label>
+            <input type="time" class="form-control" id="departureTime" name="departureTime">
+        </div>
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="directOnly" name="directOnly">
+            <label class="form-check-label" for="directOnly">Tylko połączenia bezpośrednie</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Szukaj</button>
+    </form>
+
+    <form action="/list" method="get" class="mt-4">
+        <button type="submit" class="btn btn-secondary">Lista przystanków</button>
+    </form>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

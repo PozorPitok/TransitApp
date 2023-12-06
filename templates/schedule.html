@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rozkład jazdy: {{ stop }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2>Rozkład jazdy: {{ stop }}</h2>
+
+    {% if schedules %}
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Kierunek</th>
+                <th>Godziny odjazdów</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for direction, times in schedules.items() %}
+                <tr>
+                    <td>{{ direction }}</td>
+                    <td>
+                        {% for time in times %}
+                            {{ "%02d:%02d" | format(time // 60, time % 60) }}<br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Brak bezpośrednich połączeń dla tego przystanku.</p>
+    {% endif %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>
