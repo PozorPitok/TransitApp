@@ -31,21 +31,14 @@ def get_departure_time(departure_time, bus_schedules, start, path):
     departure_minute = departure_time.minute
     while True:
         try:
+            #Szukaj odjazdów autobusów w danej godzinie poprzez wyszukiwanie minut odjazdów autobusów z wybranego przystanku do sąsiednich
             possible_departures = [minute for minute in bus_schedules[start][path[1]] if minute >= departure_minute]
             if not possible_departures:
                 # Brak późniejszych odjazdów w danej godzinie, przejdź do następnej godziny
                 departure_hour += 1
                 departure_minute = 0
                 continue
-            next_departure = min(possible_departures)
-            
-            if next_departure <= departure_minute:
-                # Wybrany czas odjazdu jest wcześniejszy lub równy niż wybrany w formularzu, przejdź do kolejnego dostępnego odjazdu
-                departure_hour += 1
-                departure_minute = 0
-                continue
-
-            departure_minute = next_departure
+            departure_minute = min(possible_departures)
             break
         except KeyError:
             raise ValueError(f"Brak danych w rozkładzie jazdy dla przystanku {path[1]}.")
@@ -57,6 +50,13 @@ def get_departure_time(departure_time, bus_schedules, start, path):
         real_departure_time += datetime.timedelta(hours=24)
 
     return real_departure_time.hour, real_departure_time.minute
+
+def generate_hourly_departures(start_hour, end_hour, minutes):
+    departure_times = []
+    for hour in range(start_hour, end_hour):
+        for minute in minutes:
+            departure_times.append(hour * 60 + minute)
+    return departure_times
 
 @app.route('/', methods=['GET', 'POST'])
 def find_route():
@@ -122,12 +122,6 @@ def find_route():
             min_departure_datetime = departure_datetime.replace(hour=departure_hour % 24, minute=departure_minute)
             arrival_datetime = min_departure_datetime + datetime.timedelta(minutes=time)
 
-            if min_departure_datetime.time() > arrival_datetime.time():
-                arrival_datetime += datetime.timedelta(days=1)
-
-            if arrival_datetime.date() > departure_date.date():
-                arrival_datetime = arrival_datetime.replace(day=arrival_datetime.day - 1)
-            
             if min_departure_datetime.day == departure_date.day and min_departure_datetime.time() < departure_time:
                 min_departure_datetime += datetime.timedelta(days=1)
                 arrival_datetime += datetime.timedelta(days=1)
@@ -156,19 +150,13 @@ def list_stops():
 
 @app.route('/schedule/<stop>', methods=['GET'])
 def schedule(stop):
-    # Pobierz rozkład jazdy dla danego przystanku
-    schedules = bus_schedules[stop]
-
-    # Przygotuj dane do wyświetlenia
-    data = {}
-    for destination, times in schedules.items():
-        if destination in transfer_stops:
-            data[destination] = [(hour * 60) % (24 * 60) for hour in range(24)]
-            for i in range (24):
-                data[destination][i]+=times.start
-
-    return render_template('schedule.html', stop=stop, schedules=data)
-
+    try:
+        departure_times = bus_schedules[stop]
+        data = {destination: generate_hourly_departures(0, 24, minutes) for destination, minutes in departure_times.items() if destination in transfer_stops}
+        return render_template('schedule.html', stop=stop, schedules=data)
+    
+    except KeyError:
+        return f'<h2>Nie znaleziono rozkładu jazdy dla przystanku "{stop}".</h2>'
 
 if __name__ == '__main__':
     app.run(debug=True)
