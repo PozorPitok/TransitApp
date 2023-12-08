@@ -50,7 +50,7 @@ def get_additional_times():
     
     return additional_times_dict
 
-def get_bus_schedules():
+def get_schedules():
     conn = psycopg2.connect(
         dbname="transit",
         user="postgres",
@@ -66,12 +66,12 @@ def get_bus_schedules():
     conn.close()
     
     # Przekształcenie danych z postaci krotek do postaci słownika
-    bus_schedules_dict = {}
+    schedules_dict = {}
     for row in data:
         stop_name, destination_stop, leading_minutes = row
-        if stop_name not in bus_schedules_dict:
-            bus_schedules_dict[stop_name] = {destination_stop: leading_minutes}
+        if stop_name not in schedules_dict:
+            schedules_dict[stop_name] = {destination_stop: leading_minutes}
         else:
-            bus_schedules_dict[stop_name][destination_stop] = leading_minutes
+            schedules_dict[stop_name][destination_stop] = leading_minutes
     
-    return bus_schedules_dict
+    return schedules_dict

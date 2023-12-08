@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template
 import networkx as nx
 import datetime
-from database import get_additional_times, get_bus_schedules, get_transport_network
+from database import get_additional_times, get_schedules, get_transport_network
 
 app = Flask(__name__)
 graph = get_transport_network()
 additional_times = get_additional_times()
-bus_schedules = get_bus_schedules()
+schedules = get_schedules()
 transfer_stops = ['Dworzec', 'Teatr', 'Most']
 
 G = nx.Graph()
@@ -15,9 +15,14 @@ for node, edges in graph.items():
     for edge, weight in edges.items():
         G.add_edge(node, edge, weight=weight)
 
-def get_paths(G, start, stop, direct_only, transfer_stops):
+def get_paths(G, start, stop, direct_only, transfer_stops, via_stop=None):
     all_paths = list(nx.all_simple_paths(G, start, stop))
     direct_paths = [path for path in all_paths if not any(stop in path[1:-1] for stop in transfer_stops)]
+    
+    if via_stop:
+        all_paths = [path for path in all_paths if via_stop in path[1:-1]]
+        direct_paths = [path for path in direct_paths if via_stop in path[1:-1]]
+
     if direct_only:
         if direct_paths:
             return direct_paths
@@ -26,13 +31,13 @@ def get_paths(G, start, stop, direct_only, transfer_stops):
     else:
         return all_paths
 
-def get_departure_time(departure_time, bus_schedules, start, path):
+def get_departure_time(departure_time, schedules, start, path):
     departure_hour = departure_time.hour
     departure_minute = departure_time.minute
     while True:
         try:
             #Szukaj odjazdów autobusów w danej godzinie poprzez wyszukiwanie minut odjazdów autobusów z wybranego przystanku do sąsiednich
-            possible_departures = [minute for minute in bus_schedules[start][path[1]] if minute >= departure_minute]
+            possible_departures = [minute for minute in schedules[start][path[1]] if minute >= departure_minute]
             if not possible_departures:
                 # Brak późniejszych odjazdów w danej godzinie, przejdź do następnej godziny
                 departure_hour += 1
@@ -92,19 +97,17 @@ def find_route():
                        <p>Spróbuj poprawić nazwę(-y) przystanku(-ów).</p>'''
 
         try:
-            paths = get_paths(G, start, stop, direct_only, transfer_stops)
+            paths = get_paths(G, start, stop, direct_only, transfer_stops, via_stop)
         except ValueError:
             return '''<h2>Brak połączeń między przystankami.</h2>
-                      <p>Spróbuj wybrać inne przystanki lub odznacz opcję "Tylko połączenia bezpośrednie".</p>'''
+                    <p>Spróbuj wybrać inne przystanki lub odznacz opcję "Tylko połączenia bezpośrednie".</p>'''
 
         results = []
         for path in paths:
-            if not via_stop or (via_stop and via_stop != start and via_stop != stop and via_stop in path[1:-1]):
-                time = sum(G[path[i]][path[i + 1]]['weight'] for i in range(len(path) - 1))
-                for i in range(len(path) - 2):
-                    time += additional_times.get((path[i], path[i + 1], path[i + 2]), 0)
-
-                results.append((path, time))
+            time = sum(G[path[i]][path[i + 1]]['weight'] for i in range(len(path) - 1))
+            for i in range(len(path) - 2):
+                time += additional_times.get((path[i], path[i + 1], path[i + 2]), 0)
+            results.append((path, time))
 
         if not results:
             return '''<h2>Brak połączeń.</h2>
@@ -118,7 +121,7 @@ def find_route():
         rendered_results = []
         for path, time in results:
             transfers = sum(1 for stop in path if stop in transfer_stops) - int(start in transfer_stops) - int(stop in transfer_stops)
-            departure_hour, departure_minute = get_departure_time(departure_datetime, bus_schedules, start, path)
+            departure_hour, departure_minute = get_departure_time(departure_datetime, schedules, start, path)
             min_departure_datetime = departure_datetime.replace(hour=departure_hour % 24, minute=departure_minute)
             arrival_datetime = min_departure_datetime + datetime.timedelta(minutes=time)
 
@@ -151,7 +154,7 @@ def list_stops():
 @app.route('/schedule/<stop>', methods=['GET'])
 def schedule(stop):
     try:
-        departure_times = bus_schedules[stop]
+        departure_times = schedules[stop]
         data = {destination: generate_hourly_departures(0, 24, minutes) for destination, minutes in departure_times.items() if destination in transfer_stops}
         return render_template('schedule.html', stop=stop, schedules=data)
     
